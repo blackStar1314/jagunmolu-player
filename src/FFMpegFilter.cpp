@@ -31,7 +31,7 @@ std::string FFMpegFilter::get_property(std::string key) {
 }
 
 FFMpegFilter_Ptr FFMpegFilter::get_filter(FFMpegFilterGraph* graph, std::string name) {
-    FFMpegFilter_Ptr filt = new FFMpegFilter();
+    FFMpegFilter_Ptr filt{new FFMpegFilter()};
     
     filt->filter = avfilter_get_by_name(name.c_str());
     if (!filt->filter) return nullptr;

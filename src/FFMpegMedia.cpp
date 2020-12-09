@@ -6,7 +6,7 @@ namespace jp {
 
 	bool FFMpegMedia::parse() {
 	    release();
-	    demuxer = new FFMpegDemuxer(context);
+	    demuxer.reset(new FFMpegDemuxer(context));
 	    if (!demuxer) {
 	        error = "Unable to allocate demuxer";
 	        return false;
@@ -45,8 +45,7 @@ namespace jp {
     }
     
     void FFMpegMedia::release() {
-        if (demuxer) delete demuxer;
-        demuxer = nullptr;
+        parsed = false;
     }
 	
 }

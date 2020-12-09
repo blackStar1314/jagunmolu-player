@@ -24,6 +24,8 @@ namespace jp {
         
         fifo = av_audio_fifo_alloc(AV_SAMPLE_FMT_S16, gotten.channels, 1);
         if (!fifo) return false;
+        
+        buffering = false;
 
 		return true;
 	}
@@ -63,12 +65,19 @@ namespace jp {
             auto frame = output->media_player->get_next_audio_frame();
             if (!frame) {
                 // We don't have enough, bail :)
-                printf("Not enough frames to give to the output device!\n");
-                printf("Giving it what I have...\n");
-                output->media_player->audio_output_finished();
+                output->buffering = false;
+                output->media_player->buffering_changed();
                 break;
             }
+            
+            if (output->buffering) {
+                output->buffering = false;
+                output->media_player->buffering_changed();
+            }
+            
             av_audio_fifo_write(output->fifo, (void**)frame->get_data(), frame->get_number_of_samples());
+            
+            output->media_player->set_last_audio_pts(frame->get_presentation_timestamp());
         }
         
         int read = av_audio_fifo_read(output->fifo, (void**)&buffer, samples);

@@ -47,6 +47,8 @@ namespace jp {
         void release() { av_frame_unref(internal); }
         int get_sample_format() { return internal->format; }
         
+        int get_pixel_format() { return internal->format; }
+        
         uint8_t** get_data() { return internal->data; }
         /// Returns the data size in bytes
         int32_t* get_data_size() { return internal->linesize; }
@@ -54,8 +56,6 @@ namespace jp {
         
         /// Whether the frame is a valid frame
         bool is_valid() { return internal != nullptr; }
-        
-        ~FFMpegFrame() { av_frame_free(&internal); internal = nullptr; }
         
     private:
         FFMpegFrame() { internal = av_frame_alloc(); }
@@ -66,5 +66,5 @@ namespace jp {
         AVFrame* internal;
     };
     
-    using FFMpegFrame_Ptr = FFMpegFrame*;
+    using FFMpegFrame_Ptr = std::shared_ptr<FFMpegFrame>;
 }

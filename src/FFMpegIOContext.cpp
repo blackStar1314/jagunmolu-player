@@ -4,12 +4,13 @@ namespace jp {
 
     /// Opens the file path with the specified open mode
     bool FFMpegIOContext::open(std::string path, OpenMode open_mode) {
+        this->path = path;
     	int flag = open_mode == OpenMode::OPEN_MODE_READ ? AVIO_FLAG_READ : AVIO_FLAG_WRITE;
     	
-    	int ret = avio_check(path.c_str(), AVIO_FLAG_READ_WRITE);
+    	int ret = avio_check(path.c_str(), flag);
     	if (ret < 0) {
     	    char buffer[1024];
-    	    snprintf(buffer, 2048, "Path doesn't exist: %s\n", path.c_str());
+    	    snprintf(buffer, 1024, "Path doesn't exist: %s\n", path.c_str());
     	    error = std::string(buffer);
     	    return false;
     	}
@@ -77,7 +78,5 @@ namespace jp {
     void FFMpegIOContext::close() {
         avio_close(io_context);
     }
-    
-    
 
 }

@@ -20,6 +20,8 @@ public:
     /// Provide info about the data that will be put inside this graph
     FFMpegFilterGraph(int sample_format, std::string channel_layout, int sample_rate, std::string time_base);
     
+    FFMpegFilterGraph(int pixel_format, int width, int height, std::string time_base);
+    
     ~FFMpegFilterGraph();
     
     /// Adds a filter to the end of the filter graph. If for some reason you pass a null filter to this graph, it does not add it to the filter graph. Returns true if operation completed successfully and false otherwise
@@ -49,7 +51,16 @@ public:
     FFMpegFilter_Ptr create_filter(std::string name);
     
     bool get_frame(FFMpegFrame_Ptr frame) {
-        return av_buffersink_get_frame(output->filter_context, frame->internal) >= 0;
+        int error;
+        error = av_buffersink_get_frame(output->filter_context, frame->internal);
+        if (error < 0) {
+            if (error == AVERROR(EAGAIN)) {
+                fprintf(stderr, "Need more input frames to get this thing out!\n");
+            } else if (error == AVERROR_EOF) {
+                fprintf(stderr, "End of file from the filter graph!\n");
+            }
+        }
+        return error >= 0;
     }
     
     size_t get_filters_size() { return filters.size(); }
@@ -57,13 +68,14 @@ public:
     
     bool add_frame(FFMpegFrame_Ptr frame) {
         if (!initialized) return false;
-        return av_buffersrc_add_frame(input->filter_context, (!frame) ? nullptr : frame->internal) >= 0;
+        auto value = frame ? frame->internal : nullptr;
+        return av_buffersrc_add_frame(input->filter_context, value) >= 0;
     }
     
     bool send_command(FFMpegFilter_Ptr filter, std::string value) {
         char response[2048];
         int result;
-        if ((result = avfilter_graph_send_command(graph_internal.get(), filter->get_name().c_str(), filter->get_name().c_str(), value.c_str(), response, 2048, 0) < 0)) {
+        if ((result = avfilter_graph_send_command(graph_internal, filter->get_name().c_str(), filter->get_name().c_str(), value.c_str(), response, 2048, 0) < 0)) {
             fprintf(stderr, "Unable to send command! Response: %s", response);
             fprintf(stderr, "AVERROR(ENOSYS)?: %s", av_make_error_string(response, 2048, result));
         } else {

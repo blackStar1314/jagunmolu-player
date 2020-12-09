@@ -12,7 +12,7 @@ namespace jp {
 class FFMpegFilter;
 class FFMpegFilterGraph;
 
-using FFMpegFilter_Ptr = FFMpegFilter*;
+using FFMpegFilter_Ptr = std::shared_ptr<FFMpegFilter>;
 
 /// After setting all the filter properties, make sure to call initialize on the filter instance. Failure to call this might cause problems
 class FFMpegFilter

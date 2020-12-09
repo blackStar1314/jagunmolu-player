@@ -41,7 +41,7 @@ private:
     
 };
 
-using FFMpegResampler_Ptr = FFMpegResampler;
+using FFMpegResampler_Ptr = std::shared_ptr<FFMpegResampler>;
 
 }
 

@@ -45,14 +45,17 @@ namespace jp {
         
         ~FFMpegDecoder() { release(); }
         
+        DecoderType getType() { return type; }
+        
     private:
-        FFMpegDecoder() = default;
+        FFMpegDecoder(DecoderType type) : type(type) {}
         friend class FFMpegDemuxer;
+        DecoderType type;
         std::string error;
         DecoderParams params{};
         bool finished{false};
         bool flushed{false};
     };
     
-    using FFMpegDecoder_Ptr = FFMpegDecoder*;
+    using FFMpegDecoder_Ptr = std::shared_ptr<FFMpegDecoder>;
 }

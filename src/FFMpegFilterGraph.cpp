@@ -19,19 +19,39 @@ FFMpegFilterGraph::FFMpegFilterGraph(int sample_format, std::string channel_layo
     input->set_property("sample_fmt", std::to_string(sample_format));
     input->set_property("channel_layout", channel_layout);
     input->set_property("sample_rate", std::to_string(sample_rate));
-    input->set_property("time_base", time_base);
+//    input->set_property("time_base", time_base);
     if (!input->initialize()) initialized = false;
     
     output = create_filter("abuffersink");
     if (!output->initialize()) initialized = false;
 }
 
+FFMpegFilterGraph::FFMpegFilterGraph(int pixel_format, int width, int height, std::string time_base) {
+    initialized = true;
+    graph_internal = avfilter_graph_alloc();
+    if (!graph_internal) {
+        error = "Unable to allocate filter graph!";
+        initialized = false;
+        
+        return;
+    }
+    
+    avfilter_graph_set_auto_convert(graph_internal, AVFILTER_AUTO_CONVERT_ALL);
+    
+    input = create_filter("buffer");
+    input->set_property("width", std::to_string(width));
+    input->set_property("pix_fmt", std::to_string(pixel_format));
+    input->set_property("height", std::to_string(height));
+    input->set_property("time_base", time_base);
+    if (!input->initialize()) initialized = false;
+    
+    output = create_filter("buffersink");
+    if (!output->initialize()) initialized = false;
+}
+
 FFMpegFilterGraph::~FFMpegFilterGraph() {
     fprintf(stderr, "Cleaning up filters...");
     avfilter_graph_free(&graph_internal);
-    for (size_t i = 0; i < filters.size(); i++) {
-        delete filters[i];
-    }
     filters.clear();
 }
 
@@ -125,7 +145,7 @@ bool FFMpegFilterGraph::configure() {
     }
     
     if (filters.empty()) {
-        good = avfilter_link(input->filter_context, 0, output->filter_context, 0);
+        good = avfilter_link(input->filter_context, 0, output->filter_context, 0) >= 0;
         if (!good) {
             return false;
         }

@@ -34,7 +34,7 @@ namespace jp {
         
         if (!resampler_context) return nullptr;
         
-		FFMpegFrame_Ptr frame_ptr = new FFMpegFrame();
+        FFMpegFrame_Ptr frame_ptr{new FFMpegFrame()};
 
 		if (!frame_ptr) return nullptr;
 

@@ -31,6 +31,22 @@ namespace jp {
 
         	return AV_PIX_FMT_NONE;
         }
+        
+        int get_width() {
+            if (demuxer && demuxer->has_video()) {
+                return demuxer->get_video_stream()->get_width();
+            } else {
+                return 0;
+            }
+        }
+        
+        int get_height() {
+            if (demuxer && demuxer->has_video()) {
+                return demuxer->get_video_stream()->get_height();
+            } else {
+                return 0;
+            }
+        }
 
         void release();
         
@@ -40,7 +56,6 @@ namespace jp {
         
         bool has_audio() { return demuxer->has_audio(); }
         bool has_video() { return demuxer->has_video(); }
-        bool has_subtitles() { return demuxer->has_subtitles(); }
 
 		~FFMpegMedia() { release(); }
 		
@@ -70,8 +85,8 @@ namespace jp {
 		std::string get_error() { return error; }
 		
     private:
-        FFMpegIOContext_Ptr context;
-        FFMpegDemuxer_Ptr demuxer;
+        FFMpegIOContext_Ptr context{nullptr};
+        FFMpegDemuxer_Ptr demuxer{nullptr};
         
         std::string path{};
         uint64_t duration{};
@@ -80,5 +95,5 @@ namespace jp {
         Metadata metadata{};
 	};
 	
-	using FFMpegMedia_Ptr = FFMpegMedia*;
+	using FFMpegMedia_Ptr = std::shared_ptr<FFMpegMedia>;
 }

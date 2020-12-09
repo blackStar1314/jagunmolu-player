@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <memory>
 
 extern "C" {
 	#include <libavformat/avformat.h>
@@ -51,6 +52,6 @@ namespace jp {
     	
     };
 
-    using FFMpegIOContext_Ptr = FFMpegIOContext*;
+    using FFMpegIOContext_Ptr = std::shared_ptr<FFMpegIOContext>;
 
 }

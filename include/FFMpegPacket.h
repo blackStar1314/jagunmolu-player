@@ -12,10 +12,10 @@ namespace jp {
     public:
         bool is_empty() { return empty; }
         
-        /// Return the presentation timestamp in milliseconds
+        /// Return the presentation timestamp in the stream's time base unit
         int64_t get_pts() { return internal->pts; }
         
-        /// Return the decompression timestamp in milliseconds
+        /// Return the decompression timestamp in the stream's time base unit
         int64_t get_dts() { return internal->dts; }
         
         int64_t get_byte_position() { return internal->pos; }
@@ -34,6 +34,8 @@ namespace jp {
         bool is_video_packet() { return video_packet; }
         bool is_subtitle_packet() { return subtitle_packet; }
         
+        uint64_t get_bytes() { return internal->size; }
+        
         uint8_t* get_data() { return internal->data; }
         
         bool is_valid() { return internal != nullptr; }
@@ -41,6 +43,7 @@ namespace jp {
     private:
         friend class FFMpegDemuxer;
         friend class FFMpegDecoder;
+        friend class FFMpegSubtitleDecoder;
         FFMpegPacket() { internal = av_packet_alloc(); }
         bool empty{true};
         AVPacket* internal{nullptr};
@@ -49,5 +52,5 @@ namespace jp {
         bool subtitle_packet{false};
     };
     
-    using FFMpegPacket_Ptr = FFMpegPacket*;
+    using FFMpegPacket_Ptr = std::shared_ptr<FFMpegPacket>;
 }

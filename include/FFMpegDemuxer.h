@@ -18,12 +18,10 @@ namespace jp {
 		bool initialize();
         bool has_audio() { return has_audio_stream; }
         bool has_video() { return has_video_stream; }
-        bool has_subtitles() { return false; }
         FFMpegPacket_Ptr get_next_packet();
         void release();
         FFMpegDecoder_Ptr get_audio_decoder() { return audio_decoder; }
         FFMpegDecoder_Ptr get_video_decoder() { return video_decoder; }
-        FFMpegDecoder_Ptr get_subtitle_decoder() { return nullptr; }
         bool is_initialized() { return initialized; }
         
         FFMpegStream_Ptr get_audio_stream() { return audio_stream; }
@@ -40,26 +38,29 @@ namespace jp {
         bool seek(uint64_t position);
         
         void reset() {
-            seek(0);
+            if (!seek(0)) {
+                fprintf(stderr, "Demuxer couldn't seek back to the beginning...\n");
+            }
             finished = false;
             if (audio_decoder) audio_decoder->set_finished(false);
             if (video_decoder) video_decoder->set_finished(false);
         }
 
 	private:
-	    FFMpegIOContext_Ptr io_context;
-		AVFormatContext* format_context{};
-		AVCodecContext* audio_decoder_context{};
-		AVCodec* audio_decoder_internal;
-		AVCodecContext* video_decoder_context{};
-		AVCodec* video_decoder_internal;
+        FFMpegIOContext_Ptr io_context{nullptr};
+		AVFormatContext* format_context{nullptr};
+		AVCodecContext* audio_decoder_context{nullptr};
+        AVCodec* audio_decoder_internal{nullptr};
+		AVCodecContext* video_decoder_context{nullptr};
+        AVCodec* video_decoder_internal{nullptr};
 
-		FFMpegDecoder_Ptr audio_decoder;
-		FFMpegDecoder_Ptr video_decoder;
+        FFMpegDecoder_Ptr audio_decoder{nullptr};
+        FFMpegDecoder_Ptr video_decoder{nullptr};
 		std::string error;
 		
-		FFMpegStream_Ptr audio_stream;
-		FFMpegStream_Ptr video_stream;
+        FFMpegStream_Ptr audio_stream{nullptr};
+        FFMpegStream_Ptr video_stream{nullptr};
+        FFMpegStream_Ptr subtitle_stream{nullptr};
 		
 		bool has_audio_stream{false};
 		bool has_video_stream{false};
@@ -67,5 +68,5 @@ namespace jp {
 		bool finished{true};
 	};
 	
-	using FFMpegDemuxer_Ptr = FFMpegDemuxer*;
+	using FFMpegDemuxer_Ptr = std::shared_ptr<FFMpegDemuxer>;
 }

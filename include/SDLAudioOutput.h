@@ -12,8 +12,6 @@ namespace jp {
 	class SDLAudioOutput : public IAudioOutput {
 	public:
 		SDLAudioOutput(FFMpegMediaPlayer_Ptr media_player) : IAudioOutput::IAudioOutput(media_player) {}
-        
-        ~SDLAudioOutput() { av_audio_fifo_free(fifo); }
 
 		bool initialize() override;
 

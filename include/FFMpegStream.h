@@ -8,6 +8,8 @@ namespace jp {
     class FFMpegDemuxer;
     struct FFMpegStream {
         double get_display_aspect_ratio() { return av_q2d(internal->display_aspect_ratio); }
+        int get_display_aspect_ratio_numerator() { return internal->display_aspect_ratio.num; }
+        int get_display_aspect_ratio_denominator() { return internal->display_aspect_ratio.den; }
         double get_time_base() { return av_q2d(internal->time_base); }
         double get_frame_rate() { return av_q2d(internal->r_frame_rate); }
         
@@ -38,12 +40,18 @@ namespace jp {
             return internal->time_base.den;
         }
         
+        int get_width() { return internal->codecpar->width; }
+        int get_height() { return internal->codecpar->height; }
+        
+        bool is_attached_pic() { return attached_pic; }
+        
     private:
         friend class FFMpegDemuxer;
         FFMpegStream() = default;
         AVStream* internal{nullptr};
         int index{-1};
+        bool attached_pic{false};
     };
     
-    using FFMpegStream_Ptr = FFMpegStream*;
+    using FFMpegStream_Ptr = std::shared_ptr<FFMpegStream>;
 }

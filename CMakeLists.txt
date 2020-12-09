@@ -16,12 +16,14 @@ list(APPEND SOURCES
         src/Timer.cpp
 		src/FFMpegResampler.cpp
 		src/FFMpegFilter.cpp
-		src/FFMpegFilterGraph.cpp)
+		src/FFMpegFilterGraph.cpp
+		src/SDLVideoOutput.cpp
+		src/SubtitleManager.cpp)
 
 add_library(${PROJECT_NAME} ${SOURCES})
 
 add_executable(jagunmolu-player-test test/main.cpp)
 
-target_link_libraries(${PROJECT_NAME} avutil avformat avcodec swresample avfilter SDL2 pthread)
+target_link_libraries(${PROJECT_NAME} avutil avformat avcodec swresample avfilter SDL2 pthread swscale SDL2_ttf)
 
 target_link_libraries(jagunmolu-player-test ${PROJECT_NAME})

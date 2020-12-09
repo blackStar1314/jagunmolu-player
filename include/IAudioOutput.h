@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <atomic>
 
 namespace jp {
 
@@ -8,7 +9,7 @@ namespace jp {
 
 	class IAudioOutput {
 	public:
-		IAudioOutput(FFMpegMediaPlayer* media_player) : media_player(media_player) {}
+		IAudioOutput(std::shared_ptr<FFMpegMediaPlayer> media_player) : media_player(media_player) {}
 
 		/// Initialize the audio output
 		virtual bool initialize() = 0;
@@ -18,13 +19,15 @@ namespace jp {
 		virtual void release() = 0;
 		std::string get_error() { return error; }
         virtual void reset() = 0;
+        bool is_buffering() { return buffering; }
 		
 	protected:
-		FFMpegMediaPlayer* media_player;
+		std::shared_ptr<FFMpegMediaPlayer> media_player;
 		std::string error;
-		bool is_playing{false};
+		std::atomic_bool is_playing{false};
+        std::atomic_bool buffering{false};
 	};
 
-	using AudioOutput_Ptr = IAudioOutput*;
+	using AudioOutput_Ptr = std::shared_ptr<IAudioOutput>;
 
 }
