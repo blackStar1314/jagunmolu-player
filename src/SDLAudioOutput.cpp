@@ -77,7 +77,8 @@ namespace jp {
             
             av_audio_fifo_write(output->fifo, (void**)frame->get_data(), frame->get_number_of_samples());
             
-            output->media_player->set_last_audio_pts(frame->get_presentation_timestamp());
+			// Set the last audio presentation time in milliseconds
+            output->media_player->set_last_audio_pts(frame->get_presentation_timestamp() * (output->media_player->get_current_media()->get_demuxer()->get_audio_stream()->get_time_base() * 1000.0));
         }
         
         int read = av_audio_fifo_read(output->fifo, (void**)&buffer, samples);

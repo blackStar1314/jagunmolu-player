@@ -41,8 +41,6 @@ namespace jp {
         bool is_finished() { return finished; }
         void set_finished(bool value) { finished = value; }
         
-        bool is_flushed() { return flushed; }
-        
         ~FFMpegDecoder() { release(); }
         
         DecoderType getType() { return type; }
@@ -54,7 +52,6 @@ namespace jp {
         std::string error;
         DecoderParams params{};
         bool finished{false};
-        bool flushed{false};
     };
     
     using FFMpegDecoder_Ptr = std::shared_ptr<FFMpegDecoder>;

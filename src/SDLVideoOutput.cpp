@@ -65,11 +65,10 @@ bool SDLVideoOutput::initialize() {
 }
 
 void SDLVideoOutput::playback_func() {
-    SDL_Event event;
     while (!stop_thread) {
         // Just stay here and do nothing if we're not currently playing
+        std::unique_lock<std::mutex> lock(player_mutex);
         while (!playing) {
-            std::unique_lock<std::mutex> lock(player_mutex);
             player_condition.wait(lock);
             fprintf(stderr, "Said to play\n");
         }
@@ -79,13 +78,13 @@ void SDLVideoOutput::playback_func() {
             fprintf(stderr, "Couldn't dequeue video frame!\n");
             buffering = true;
             player->buffering_changed();
-            
+
             while (buffering) {
-                std::unique_lock<std::mutex> lock(player_mutex);
                 frame_queue_condition.notify_all();
                 player_condition.wait(lock);
             }
         }
+
         frame_queue_condition.notify_all();
         
         if (frame) {
@@ -95,8 +94,7 @@ void SDLVideoOutput::playback_func() {
             
             if (!player->get_current_media()->get_demuxer()->get_video_stream()->is_attached_pic()) {
                 if (sync_to_audio) {
-                    auto tb_a = player->get_current_media()->get_demuxer()->get_audio_stream()->get_time_base();
-                    auto last_audio_pts = player->get_last_audio_pts() * tb_a * 1000;
+                    auto last_audio_pts = player->get_last_audio_pts();
                     
                     // This is where the synchronization happens
                     auto diff = last_audio_pts - pts;
@@ -163,14 +161,6 @@ void SDLVideoOutput::playback_func() {
             }
             SDL_RenderPresent(renderer);
         }
-        
-        if (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                // Stop playback, we're done here...
-                player->stop();
-                break;
-            }
-        }
     }
     
     fprintf(stderr, "Finished videoplayback_func\n");
@@ -178,9 +168,9 @@ void SDLVideoOutput::playback_func() {
 
 void SDLVideoOutput::buffer_data() {
     while (!stop_thread) {
+        std::unique_lock<std::mutex> lock(frame_queue_mutex);
         FFMpegFrame_Ptr frame = player->get_next_video_frame();
         if (frame) {
-            std::unique_lock<std::mutex> lock(frame_queue_mutex);
             while (!video_frame_queue.try_enqueue(frame)) {
                 if (buffering) {
                     buffering = false;
@@ -196,10 +186,18 @@ void SDLVideoOutput::buffer_data() {
 }
 
 void SDLVideoOutput::clear_buffer() {
+    fprintf(stderr, "Clearing buffer...\n");
     FFMpegFrame_Ptr frame;
+    bool was_playing = playing;
+    playing = false;
+    buffering = true;
+    player->buffering_changed();
     std::unique_lock<std::mutex> lock(frame_queue_mutex);
+    std::unique_lock<std::mutex> lock2(player_mutex);
     while (video_frame_queue.try_dequeue(frame)) {}
     frame_queue_condition.notify_all();
+    player_condition.notify_all();
+    fprintf(stderr, "Cleared the buffer!\n");
 }
 
 bool SDLVideoOutput::play() {
@@ -228,6 +226,8 @@ void SDLVideoOutput::release() {
     SDL_DestroyRenderer(renderer);
     SDL_Quit();
 }
-void SDLVideoOutput::reset() {}
+void SDLVideoOutput::reset() {
+    clear_buffer();
+}
 
 }

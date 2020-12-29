@@ -122,6 +122,10 @@ namespace jp {
                             continue;
                         }
                         while (!audio_packet_queue.try_enqueue(packet)) {
+                            if (!playing && requested_play) {
+                                buffering = false;
+                                buffering_changed();
+                            }
                             if (released) break;
                             demuxer_wake_condition.wait(lock);
                         }
@@ -131,6 +135,10 @@ namespace jp {
                             continue;
                         }
                         while (!video_packet_queue.try_enqueue(packet)) {
+                            if (!playing && requested_play) {
+                                buffering = false;
+                                buffering_changed();
+                            }
                             if (released) break;
                             demuxer_wake_condition.wait(lock);
                         }
@@ -149,6 +157,7 @@ namespace jp {
         // Return success, we're still buffering
         if (buffering) {
             requested_play = true;
+            buffering_changed();
             return MediaResult::RESULT_SUCCESS;
         }
         
@@ -197,38 +206,35 @@ namespace jp {
     }
     
     bool FFMpegMediaPlayer::seek_to(uint64_t position_millis) {
-        bool was_playing = playing;
-        pause();
-        
         if (current_media->get_demuxer()->seek(position_millis)) {
+            bool was_playing = playing;
+            pause();
+            
             current_position = position_millis;
+
+            if (current_media->has_audio()) audio_output->reset();
+            if (current_media->has_video()) video_output->reset();
+            
+            demuxer_clear = true;
+            
+            FFMpegPacket_Ptr ptr;
+            FFMpegFrame_Ptr frame;
+            while (audio_packet_queue.try_dequeue(ptr)) {}
+            while (video_packet_queue.try_dequeue(ptr)) {}
+            while (audio_frame_queue.try_dequeue(frame)) {}
+            
+            demuxer_clear = false;
+            
+            demuxer_wake_condition.notify_all();
+
+            buffering = true;
+            buffering_changed();
+            
+            if (was_playing) play();
+            return true;
         }
         
-        if (current_media->has_audio()) audio_output->reset();
-        if (current_media->has_video()) video_output->reset();
-        
-        // Wake the demuxer in case it's sleeping
-        demuxer_wake_condition.notify_all();
-        
-        demuxer_clear = true;
-        
-        std::unique_lock<std::mutex> lock(demuxer_wake_mutex);
-        
-        FFMpegPacket_Ptr ptr;
-        while (audio_packet_queue.try_dequeue(ptr)) {}
-        while (video_packet_queue.try_dequeue(ptr)) {}
-        
-        demuxer_clear = false;
-        
-        demuxer_wake_condition.notify_all();
-        
-        if (video_enabled) {
-            video_output->clear_buffer();
-        }
-        
-        if (was_playing) play();
-        
-        return true;
+        return false;
     }
     
     FFMpegFrame_Ptr FFMpegMediaPlayer::get_next_audio_frame() {
@@ -239,7 +245,6 @@ namespace jp {
             FFMpegPacket_Ptr packet;
             if (!audio_packet_queue.try_dequeue(packet)) {
                 if (current_media->get_demuxer()->is_finished()) {
-                    if (audio_decoder->is_flushed()) return nullptr;
                     auto result = audio_decoder->flush();
                     if (result.empty()) return nullptr;
                     std::for_each(result.begin(), result.end(), [&](FFMpegFrame_Ptr frame) {
@@ -318,6 +323,7 @@ namespace jp {
     bool FFMpegMediaPlayer::add_subtitle(std::string path) { return subtitle_manager->add_subtitle(path); }
     
     void FFMpegMediaPlayer::buffering_changed() {
+        fprintf(stderr, "Someone requested audio playback!\n");
         if (audio_enabled) {
             buffering.store(audio_output->is_buffering() || audio_output->is_buffering());
             fprintf(stderr, "Audio Buffering: %d\n", audio_output->is_buffering());

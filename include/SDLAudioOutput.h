@@ -33,6 +33,7 @@ namespace jp {
             if (fifo) {
                 av_audio_fifo_reset(fifo);
                 total_samples_written = 0;
+                last_pts = media_player->get_position();
             }
         }
         

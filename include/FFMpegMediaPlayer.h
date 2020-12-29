@@ -125,60 +125,165 @@ namespace jp {
             }
         }
         
-        /// Sets the subtitle delay
-        /// A positive value means that the subtitle is delayed
-        /// A negative value means that the subtitle is hastened
+        /**
+         * @brief Set the subtitle delay in milliseconds
+         * A positive value slows down the subtitle
+         * A negative value speeds up the subtitle
+         * @param delay the delay in milliseconds
+         */
         void set_subtitle_delay(int64_t delay) {
             if (video_output) video_output->set_subtitle_delay(delay);
         }
         
+        /**
+         * @brief Get the subtitle delay
+         * 
+         * @return subtitle delay if it there is a subtitle, else returns 0
+         */
         int64_t get_subtitle_delay() { if (video_output) return video_output->get_subtitle_delay(); else return 0; }
         
+        /**
+         * @brief Add a subtitle to the media file. This parses and adds the subtitle to the currently playing media.
+         * 
+         * @param path - The path to the subtitle to add
+         * @return true if the subtitle was successfully added and false otherwise
+         */
         bool add_subtitle(std::string path);
         
-        /// Called to tell the media player that the buffering info has changed
+        /**
+         * @brief Called by the video and audio outputs attached to this media player to signify that the buffering state has changed
+         * 
+         */
         void buffering_changed();
         
+        /**
+         * @brief Returns the next decoded audio frame
+         */
         FFMpegFrame_Ptr get_next_audio_frame();
+
+        /**
+         * @brief Get the next video frame
+         */
         FFMpegFrame_Ptr get_next_video_frame();
+
+        /**
+         * @brief Destroy the FFMpegMediaPlayer object (Am I really supposed to document a destructor?)
+         */
         ~FFMpegMediaPlayer() { release(); }
     private:
+        /**
+         * @brief are we currently playing media?
+         */
         bool playing{false};
+        /**
+         * @brief Used internally for buffering
+         */
         bool requested_play{false};
+        /**
+         * @brief Represents the audio output
+         */
         AudioOutput_Ptr audio_output;
+        /**
+         * @brief Represents the video output
+         */
         VideoOutput_Ptr video_output;
+
+        /**
+         * @brief Demuxer thread
+         */
         std::thread demuxer_thread;
+        /**
+         * @brief Audio frame queue (contains uncompressed audio frames)
+         */
         moodycamel::ConcurrentQueue<FFMpegFrame_Ptr> audio_frame_queue;
+        
+        /**
+         * @brief Audio packet queue (contains compressed audio frames)
+         */
         moodycamel::ConcurrentQueue<FFMpegPacket_Ptr> audio_packet_queue{300};
+        
+        /**
+         * @brief Video packet queue (contains compressed video frames)
+         */
         moodycamel::ConcurrentQueue<FFMpegPacket_Ptr> video_packet_queue{200};
         
-        /// The current media being played by this media player
+        /**
+         * @brief Current media played by this media player
+         */
         FFMpegMedia_Ptr current_media{nullptr};
+
+        /**
+         * @brief The playback position of the currently playing media
+         */
         uint64_t current_position{0};
+
+        /**
+         * @brief The audio filter graph
+         */
         FFMpegFilterGraph_Ptr filter_graph{nullptr};
+
+        /**
+         * @brief The video filter graph
+         */
         FFMpegFilterGraph_Ptr video_filter_graph{nullptr};
         
-        /// An error handle
+        /**
+         * @brief An error message handle
+         */
         MediaError error;
         
-        /// Whether this media player has been released and thus cannot be used anymore
+        /**
+         * @brief Has this media player instance been released?
+         */
         std::atomic_bool released{false};
+
+        /**
+         * @brief Do we need to flush the buffered data?
+         */
         std::atomic_bool demuxer_clear{false};
+
+        /**
+         * @brief Are we buffering?
+         */
         std::atomic_bool buffering{false};
         
+        /**
+         * @brief For tracking the last audio time played (used in A/V Sync)
+         */
         std::atomic<uint64_t> last_audio_pts{0};
+        /**
+         * @brief Same as audio above
+         */
         std::atomic<uint64_t> last_video_pts{0};
         
+        /**
+         * @brief The audio decoder instance
+         */
         FFMpegDecoder_Ptr audio_decoder;
+        /**
+         * @brief The video decoder
+         */
         FFMpegDecoder_Ptr video_decoder;
-        FFMpegDecoder_Ptr subtitle_decoder;
         
+        /**
+         * @brief Whether audio is enabled
+         */
         std::atomic_bool audio_enabled{false};
+
+        /**
+         * @brief Whether video is enabled
+         */
         std::atomic_bool video_enabled{false};
         
+        /**
+         * @brief For some basic demuxer synchronizations
+         */
         std::mutex demuxer_wake_mutex{};
         std::condition_variable demuxer_wake_condition{};
         
+        /**
+         * @brief Responsible for parsing and managing subtitles
+         */
         std::shared_ptr<SubtitleManager> subtitle_manager{new SubtitleManager};
     };
     

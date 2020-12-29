@@ -33,8 +33,6 @@ namespace jp {
         fprintf(stderr, "Flushing...\n");
         std::vector<FFMpegFrame_Ptr> frames;
         
-        if (flushed) return frames;
-        
         int error = 0;
         if ((error = avcodec_send_packet(params.codec_context, nullptr)) >= 0) {
             fprintf(stderr, "Sent flush packet!\n");
@@ -64,8 +62,6 @@ namespace jp {
                 this->error = "Invalid argument!";
             }
         }
-        
-        flushed = true;
         
         fprintf(stderr, "Flushed %zu frames\n", frames.size());
         

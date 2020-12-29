@@ -151,7 +151,8 @@ namespace jp {
         if (finished) finished = false;
         double temp = pos / 1000; // Convert to seconds
         uint64_t final_position = temp * AV_TIME_BASE;
-        return av_seek_frame(format_context, -1, final_position, 0) >= 0;
+        int ret = avformat_seek_file(format_context, -1, final_position, final_position, final_position, 0);
+        return ret >= 0;
     }
     
     void FFMpegDemuxer::release() {

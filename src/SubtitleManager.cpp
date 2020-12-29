@@ -17,12 +17,14 @@ bool SubtitleManager::add_subtitle(std::string path) {
     if (!proceed) return false;
     
     AVFormatContext* ctx = nullptr;
-    const char* url = path.c_str();
+    const char* url = av_strdup(path.c_str());
     
     if (avformat_open_input(&ctx, url, nullptr, nullptr) < 0) {
         fprintf(stderr, "No subtitle path!\n");
         return false;
     }
+
+    av_free((void*)url);
     
     if (!ctx) {
         fprintf(stderr, "Could not initialize FormatContext!\n");
@@ -44,7 +46,7 @@ bool SubtitleManager::add_subtitle(std::string path) {
         return false;
     }
     
-    SubtitleFile file;
+    SubtitleFile file{};
     file.path = path;
     
     AVStream* sub_stream = ctx->streams[index];
@@ -65,6 +67,8 @@ bool SubtitleManager::add_subtitle(std::string path) {
     
     avformat_close_input(&ctx);
     av_packet_free(&packet);
+    
+    fprintf(stderr, "Finished parsing subtitles!\n");
     
     return true;
 }
